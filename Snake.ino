@@ -43,12 +43,18 @@ enum Mode {
     SCORE           // Display number of targets acquired... or some endgame/score keeping 
 };
 
+enum Direction { 
+    CLOCKWISE,            //  
+    COUNTER_CLOCKWISE     //
+};
+
 static Mode mode = ATTRACT; 
 
 static bool isSnake = false;
 static byte snakeFace = 0;
 static byte snakeHue = 0;
 static byte snakeLength = 3;  // maybe can trail multiple tiles...
+static Direction snakeDirection = CLOCKWISE;
 
 static uint32_t snakeFaceIncrement_ms = 80;
 static uint32_t nextSnakeFaceIncrement_ms = 0;
@@ -67,20 +73,31 @@ void loop() {
   uint32_t now = millis();
   
   if(mode == ATTRACT) {
-  
+
+//    setColor(GREEN); // DEBUG MODE
+    
     if(buttonSingleClicked()){
       spawnSnake();
+    }
+
+    FOREACH_FACE(f) {
+        if (irIsReadyOnFace(f)) {
+          byte receivedMessage = irGetData(f);
+//          if((receivedMessage & 3) == GAMEPLAY) {
+            mode = GAMEPLAY;
+//          }
+        }
     }
     
   }
   else if(mode == GAMEPLAY) {
 
-    if(buttonSingleClicked()){
-      passSnake();
-    }
-
     // if has snake, update snake
     if( isSnake ) {
+
+      if(buttonSingleClicked()){
+        passSnake();
+      }
 
       // update snake position
       if( now >= nextSnakeFaceIncrement_ms ) {
@@ -100,7 +117,29 @@ void loop() {
     
     else {
       // no snake
+
+      if(buttonLongPressed()){
+        reset();
+      }
+
       setColor(OFF);
+//      setColor(YELLOW); // DEBUG MODE
+
+      
+      FOREACH_FACE(f) {
+        if (irIsReadyOnFace(f)) {
+          byte receivedMessage = irGetData(f);    
+          if (((receivedMessage & 32) >> 5) == COUNTER_CLOCKWISE) {
+             snakeDirection = CLOCKWISE;
+          }else {
+             snakeDirection = COUNTER_CLOCKWISE;
+          }
+
+          snakeHue = 4 * ((receivedMessage & 31) >> 2);
+          isSnake = true;
+        }
+      }
+
     }
     
     // if snake received accept snake
@@ -116,19 +155,29 @@ void loop() {
   
 }
 
+void reset() {
+  isSnake = false;
+  snakeFace = 0;
+  snakeHue = 0;
+  snakeLength = 3;
+  mode = ATTRACT;
+}
+
 void spawnSnake() {
   isSnake = true;
   snakeFace = 0;
   snakeHue = 0;
   snakeLength = 3;
   mode = GAMEPLAY;
+  byte data = mode;     // mode in low bits
+  irBroadcastData(data);
 }
 
 void passSnake() {
   isSnake = false;
-  byte sendFace = 1 << snakeFace;
-  byte data = snakeHue << 2 + mode; // store hue in high bits, mode in low bits
-  irSendData( data, sendFace );
+  byte data = (snakeDirection << 5) + ((snakeHue/4) << 2) + mode; // store hue in high bits, mode in low bits
+  irBroadcastData(data);
+  //irSendData( snakeFace, data);
 }
 
 void drawSnake() {
@@ -136,11 +185,14 @@ void drawSnake() {
   setColor(OFF);
 
   // update the color of the snake
-  
+  byte dir = 1;
+  if(snakeDirection == COUNTER_CLOCKWISE) {
+    dir = -1;
+  }
+
   FOREACH_FACE(f) {
     
     byte brightness;
-        
     byte distFromHead = (6 + snakeFace - f) % 6;  // returns # of positions away from the head
     byte hueAdjusted = 8 * ((32 + snakeHue - distFromHead) % 32);
     
