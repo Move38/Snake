@@ -48,7 +48,7 @@ enum Direction {
     COUNTER_CLOCKWISE     //
 };
 
-static Mode mode = ATTRACT; 
+static Mode mode = GAMEPLAY; 
 
 static bool isSnake = false;
 static byte snakeFace = 0;
@@ -85,6 +85,10 @@ void loop() {
           byte receivedMessage = irGetData(f);
 //          if((receivedMessage & 3) == GAMEPLAY) {
             mode = GAMEPLAY;
+            // alert neighbors to enter gameplay
+            byte data = mode;     // mode in low bits
+            irBroadcastData(data);
+
 //          }
         }
     }
@@ -97,6 +101,10 @@ void loop() {
 
       if(buttonSingleClicked()){
         passSnake();
+      }
+      if(buttonDoubleClicked()){
+      }
+      if(buttonMultiClicked()) {
       }
 
       // update snake position
@@ -119,6 +127,9 @@ void loop() {
       // no snake
       if(buttonSingleClicked()){
         // blink to show recognition of touch?
+      }
+      if(buttonDoubleClicked()){
+        spawnSnake();
       }
       if(buttonMultiClicked()) {
         if(buttonClickCount() == 3) {
@@ -167,7 +178,7 @@ void reset() {
   snakeFace = 0;
   snakeHue = 0;
   snakeLength = 3;
-  mode = ATTRACT;
+  mode = GAMEPLAY;
 }
 
 void spawnSnake() {
@@ -176,15 +187,15 @@ void spawnSnake() {
   snakeHue = 0;
   snakeLength = 3;
   mode = GAMEPLAY;
-  byte data = mode;     // mode in low bits
-  irBroadcastData(data);
+//  byte data = mode;     // mode in low bits
+//  irBroadcastData(data);
 }
 
 void passSnake() {
   isSnake = false;
   byte data = (snakeDirection << 5) + ((snakeHue/4) << 2) + mode; // store hue in high bits, mode in low bits
-  irBroadcastData(data);
-  //irSendData( snakeFace, data);
+//  irBroadcastData(data);
+  irSendData( snakeFace, data);
 }
 
 void drawSnake() {
