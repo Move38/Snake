@@ -117,9 +117,13 @@ void loop() {
     
     else {
       // no snake
-
-      if(buttonLongPressed()){
-        reset();
+      if(buttonSingleClicked()){
+        // blink to show recognition of touch?
+      }
+      if(buttonMultiClicked()) {
+        if(buttonClickCount() == 3) {
+          reset();
+        }
       }
 
       setColor(OFF);
@@ -137,6 +141,9 @@ void loop() {
 
           snakeHue = 4 * ((receivedMessage & 31) >> 2);
           isSnake = true;
+
+          // snake starts on face received on
+          snakeFace = f;
         }
       }
 
@@ -185,7 +192,7 @@ void drawSnake() {
   setColor(OFF);
 
   // update the color of the snake
-  byte dir = 1;
+  int dir = 1;
   if(snakeDirection == COUNTER_CLOCKWISE) {
     dir = -1;
   }
@@ -193,7 +200,7 @@ void drawSnake() {
   FOREACH_FACE(f) {
     
     byte brightness;
-    byte distFromHead = (6 + snakeFace - f) % 6;  // returns # of positions away from the head
+    byte distFromHead = (6 + snakeFace - (dir*f)) % 6;  // returns # of positions away from the head
     byte hueAdjusted = 8 * ((32 + snakeHue - distFromHead) % 32);
     
     if(distFromHead < snakeLength) {
