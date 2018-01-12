@@ -65,6 +65,8 @@ static uint32_t nextSnakeFaceIncrement_ms = 0;
 static uint32_t snakeHueIncrement_ms = 500;
 static uint32_t nextSnakeHueIncrement_ms = 0;
 
+bool bShowNeighbor = true;
+
 void setup() {
   // put your setup code here, to run once:
   //blinkAniBegin();
@@ -114,6 +116,9 @@ void loop() {
       }
       if(buttonMultiClicked()) {
       }
+      if(buttonLongPressed()) {
+        bShowNeighbor = !bShowNeighbor;
+      }
 
       // update snake position
       if( now >= nextSnakeFaceIncrement_ms ) {
@@ -128,7 +133,11 @@ void loop() {
       }
 
       // draw snake
-      drawSnake(); 
+      drawSnake();
+
+      // let neighbor know to acknowledge the snake
+      byte data = (snakeDirection << 5) + ((snakeHue/4) << 2) + ATTRACT; // store hue in high bits, mode in low bits
+      irSendData( snakeFace, data);
     }
     
     else {
@@ -144,6 +153,9 @@ void loop() {
           reset();
         }
       }
+      if(buttonLongPressed()) {
+        bShowNeighbor = !bShowNeighbor;
+      }
 
       setColor(OFF);
 //      setColor(YELLOW); // DEBUG MODE
@@ -151,18 +163,32 @@ void loop() {
       
       FOREACH_FACE(f) {
         if (irIsReadyOnFace(f)) {
-          byte receivedMessage = irGetData(f);    
-          if (((receivedMessage & 32) >> 5) == COUNTER_CLOCKWISE) {
-             snakeDirection = CLOCKWISE;
-          }else {
-             snakeDirection = COUNTER_CLOCKWISE;
+          byte receivedMessage = irGetData(f); 
+
+          if((receivedMessage & 3) == ATTRACT) {
+            if(bShowNeighbor) {
+              snakeHue = 8 * 4 * ((receivedMessage & 31) >> 2);
+              setFaceColor(f, makeColorHSB(snakeHue, 255, 127));  // dimmer showing of the snake
+              // and even dimmer to the left and right of this pin
+              byte left = ((6+f-1) % 6);
+              byte right = ((f+1) % 6);
+              setFaceColor(left, makeColorHSB(snakeHue, 255, 63));  // dimmer showing of the snake
+              setFaceColor(right, makeColorHSB(snakeHue, 255, 63));  // dimmer showing of the snake
+            }
           }
-
-          snakeHue = 4 * ((receivedMessage & 31) >> 2);
-          isSnake = true;
-
-          // snake starts on face received on
-          snakeFace = f;
+          else {
+            if (((receivedMessage & 32) >> 5) == COUNTER_CLOCKWISE) {
+               snakeDirection = CLOCKWISE;
+            }else {
+               snakeDirection = COUNTER_CLOCKWISE;
+            }
+  
+            snakeHue = 4 * ((receivedMessage & 31) >> 2);
+            isSnake = true;
+  
+            // snake starts on face received on
+            snakeFace = f;
+          }
         }
       }
 
