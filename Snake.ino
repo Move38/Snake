@@ -23,6 +23,9 @@
 */
 #include "blinklib.h"
 //#include "blinkani.h"
+#include "Serial.h"
+
+ServicePortSerial Serial;
 
 // Information to convey over message
 // Game Mode (0-3) - 2 bits
@@ -66,6 +69,11 @@ void setup() {
   // put your setup code here, to run once:
   //blinkAniBegin();
   setColor(OFF);
+
+  Serial.begin();
+
+  Serial.println("Mortals Debug");
+
 }
 
 void loop() {
@@ -76,7 +84,7 @@ void loop() {
 
 //    setColor(GREEN); // DEBUG MODE
     
-    if(buttonSingleClicked()){
+    if(buttonPressed()){
       spawnSnake();
     }
 
@@ -99,7 +107,7 @@ void loop() {
     // if has snake, update snake
     if( isSnake ) {
 
-      if(buttonSingleClicked()){
+      if(buttonPressed()){
         passSnake();
       }
       if(buttonDoubleClicked()){
@@ -125,7 +133,7 @@ void loop() {
     
     else {
       // no snake
-      if(buttonSingleClicked()){
+      if(buttonPressed()){
         // blink to show recognition of touch?
       }
       if(buttonDoubleClicked()){
@@ -196,6 +204,10 @@ void passSnake() {
   byte data = (snakeDirection << 5) + ((snakeHue/4) << 2) + mode; // store hue in high bits, mode in low bits
 //  irBroadcastData(data);
   irSendData( snakeFace, data);
+  Serial.print("Snake passing on face ");
+  Serial.print(snakeFace);
+  Serial.print(" with data ");
+  Serial.println(data);  
 }
 
 void drawSnake() {
