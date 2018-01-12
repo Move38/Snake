@@ -59,7 +59,7 @@ static byte snakeHue = 0;
 static byte snakeLength = 3;  // maybe can trail multiple tiles...
 static Direction snakeDirection = CLOCKWISE;
 
-static uint32_t snakeFaceIncrement_ms = 80;
+static uint32_t snakeFaceIncrement_ms = 140;
 static uint32_t nextSnakeFaceIncrement_ms = 0;
 
 static uint32_t snakeHueIncrement_ms = 500;
@@ -85,23 +85,23 @@ void loop() {
   if(mode == ATTRACT) {
 
 //    setColor(GREEN); // DEBUG MODE
-    
-    if(buttonPressed()){
-      spawnSnake();
-    }
-
-    FOREACH_FACE(f) {
-        if (irIsReadyOnFace(f)) {
-          byte receivedMessage = irGetData(f);
-//          if((receivedMessage & 3) == GAMEPLAY) {
-            mode = GAMEPLAY;
-            // alert neighbors to enter gameplay
-            byte data = mode;     // mode in low bits
-            irBroadcastData(data);
-
-//          }
-        }
-    }
+//    
+//    if(buttonPressed()){
+//      spawnSnake();
+//    }
+//
+//    FOREACH_FACE(f) {
+//        if (irIsReadyOnFace(f)) {
+//          byte receivedMessage = irGetData(f);
+////          if((receivedMessage & 3) == GAMEPLAY) {
+//            mode = GAMEPLAY;
+//            // alert neighbors to enter gameplay
+//            byte data = mode;     // mode in low bits
+//            irBroadcastData(data);
+//
+////          }
+//        }
+//    }
     
   }
   else if(mode == GAMEPLAY) {
@@ -115,6 +115,15 @@ void loop() {
       if(buttonDoubleClicked()){
       }
       if(buttonMultiClicked()) {
+        if(buttonClickCount() == 3) {
+          // change speed
+          if(snakeFaceIncrement_ms > 140) {
+            snakeFaceIncrement_ms = 80;
+          }
+          else {
+            snakeFaceIncrement_ms += 30;
+          }
+        }
       }
       if(buttonLongPressed()) {
         bShowNeighbor = !bShowNeighbor;
@@ -150,7 +159,13 @@ void loop() {
       }
       if(buttonMultiClicked()) {
         if(buttonClickCount() == 3) {
-          reset();
+          // change speed
+          if(snakeFaceIncrement_ms > 140) {
+            snakeFaceIncrement_ms = 80;
+          }
+          else {
+            snakeFaceIncrement_ms += 30;
+          }
         }
       }
       if(buttonLongPressed()) {
